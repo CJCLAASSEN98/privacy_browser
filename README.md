@@ -81,7 +81,7 @@ dotnet --version  # Should show 8.0.x or higher
 **2. Clone and Build**
 ```powershell
 # Clone the repository
-git clone <repository-url>
+git clone https://github.com/CJCLAASSEN98/privacy_browser
 cd browser
 
 # Restore packages and build
