@@ -1,8 +1,8 @@
+using System;
+using System.ComponentModel;
 using System.Windows;
 using Microsoft.Extensions.Logging;
 using EphemeralBrowser.UI.ViewModels;
-using Microsoft.Web.WebView2.Core;
-using System.IO;
 
 namespace EphemeralBrowser.App;
 
@@ -24,7 +24,7 @@ public partial class MainWindow : Window
         Closing += OnClosing;
     }
 
-    private async void OnLoaded(object sender, RoutedEventArgs e)
+    private async void OnLoaded(object? sender, RoutedEventArgs e)
     {
         try
         {
@@ -47,17 +47,14 @@ public partial class MainWindow : Window
         }
     }
 
-    private async void OnClosing(object sender, System.ComponentModel.CancelEventArgs e)
+    private async void OnClosing(object? sender, CancelEventArgs e)
     {
         try
         {
             _logger.LogInformation("MainWindow closing...");
             
             // Clean up view model resources
-            if (_viewModel != null)
-            {
-                await _viewModel.CleanupAsync();
-            }
+            await _viewModel.CleanupAsync();
             
             _logger.LogInformation("MainWindow cleanup completed");
         }
@@ -68,11 +65,51 @@ public partial class MainWindow : Window
         }
     }
 
-    private void AddressBar_KeyDown(object sender, System.Windows.Input.KeyEventArgs e)
+    private void BackButton_Click(object sender, RoutedEventArgs e)
     {
-        if (e.Key == System.Windows.Input.Key.Enter)
+        try
         {
-            _viewModel.NavigateCommand.Execute(AddressBar.Text);
+            _logger.LogInformation("Back button clicked directly (bypassing command system)");
+            
+            if (_viewModel.ActiveTab != null)
+            {
+                _logger.LogInformation("ActiveTab found - ProfileId: {ProfileId}, CanGoBack: {CanGoBack}", 
+                    _viewModel.ActiveTab.ProfileId, _viewModel.ActiveTab.CanGoBack());
+                    
+                _viewModel.ActiveTab.GoBack();
+            }
+            else
+            {
+                _logger.LogWarning("No active tab when back button clicked");
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error in back button click handler");
+        }
+    }
+
+    private void ForwardButton_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            _logger.LogInformation("Forward button clicked directly (bypassing command system)");
+            
+            if (_viewModel.ActiveTab != null)
+            {
+                _logger.LogInformation("ActiveTab found - ProfileId: {ProfileId}, CanGoForward: {CanGoForward}", 
+                    _viewModel.ActiveTab.ProfileId, _viewModel.ActiveTab.CanGoForward());
+                    
+                _viewModel.ActiveTab.GoForward();
+            }
+            else
+            {
+                _logger.LogWarning("No active tab when forward button clicked");
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error in forward button click handler");
         }
     }
 }

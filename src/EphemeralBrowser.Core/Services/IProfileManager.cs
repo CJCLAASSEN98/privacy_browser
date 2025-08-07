@@ -1,3 +1,5 @@
+using System;
+using System.Threading.Tasks;
 using Microsoft.Web.WebView2.Core;
 
 namespace EphemeralBrowser.Core.Services;

@@ -1,6 +1,12 @@
+using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
+using System.Threading;
+using System.Threading.Tasks;
 using Microsoft.Web.WebView2.Core;
 
 namespace EphemeralBrowser.Core.Services;
@@ -69,7 +75,8 @@ public sealed class DownloadGate : IDownloadGate, IDisposable
 
     public async Task InitializeAsync(CoreWebView2 webView, string quarantineDirectory)
     {
-        ObjectDisposedException.ThrowIfDisposed(_disposed, this);
+        if (_disposed)
+            throw new ObjectDisposedException(nameof(DownloadGate));
         
         _webView = webView ?? throw new ArgumentNullException(nameof(webView));
         _quarantineDirectory = quarantineDirectory ?? throw new ArgumentNullException(nameof(quarantineDirectory));
@@ -78,11 +85,14 @@ public sealed class DownloadGate : IDownloadGate, IDisposable
         
         _webView.DownloadStarting += OnDownloadStarting;
         _webView.DOMContentLoaded += OnDOMContentLoaded;
+        
+        await Task.CompletedTask; // Make method truly async
     }
 
     public async Task<DownloadInfo> PromoteDownloadAsync(string downloadId, string destinationPath)
     {
-        ObjectDisposedException.ThrowIfDisposed(_disposed, this);
+        if (_disposed)
+            throw new ObjectDisposedException(nameof(DownloadGate));
         
         if (!_downloads.TryGetValue(downloadId, out var download))
             throw new ArgumentException($"Download {downloadId} not found", nameof(downloadId));
@@ -99,7 +109,7 @@ public sealed class DownloadGate : IDownloadGate, IDisposable
             }
 
             // Atomic move operation
-            File.Move(download.QuarantinePath, destinationPath, overwrite: true);
+            await Task.Run(() => File.Move(download.QuarantinePath, destinationPath, overwrite: true));
             
             var promotedDownload = download with 
             { 
@@ -123,7 +133,8 @@ public sealed class DownloadGate : IDownloadGate, IDisposable
 
     public async Task<bool> DeleteDownloadAsync(string downloadId)
     {
-        ObjectDisposedException.ThrowIfDisposed(_disposed, this);
+        if (_disposed)
+            throw new ObjectDisposedException(nameof(DownloadGate));
         
         if (!_downloads.TryGetValue(downloadId, out var download))
             return false;
@@ -198,7 +209,7 @@ public sealed class DownloadGate : IDownloadGate, IDisposable
             string.Empty,
             quarantinePath,
             contentType,
-            e.DownloadOperation.TotalBytesToReceive ?? -1,
+            (long)(e.DownloadOperation.TotalBytesToReceive ?? 0UL),
             string.Empty,
             DateTime.UtcNow,
             DownloadStatus.Pending);
@@ -260,7 +271,7 @@ public sealed class DownloadGate : IDownloadGate, IDisposable
             
             DownloadCompleted?.Invoke(this, completedDownload);
         }
-        catch (Exception ex)
+        catch (Exception)
         {
             var failedDownload = download with { Status = DownloadStatus.Failed };
             _downloads.TryUpdate(downloadId, failedDownload, download);

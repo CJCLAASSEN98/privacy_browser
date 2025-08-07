@@ -8,7 +8,7 @@
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <EnableNETAnalyzers>true</EnableNETAnalyzers>
     <AnalysisLevel>latest</AnalysisLevel>
-    <ApplicationIcon>icon.ico</ApplicationIcon>
+    <!-- <ApplicationIcon>icon.ico</ApplicationIcon> -->
     <AssemblyTitle>EphemeralBrowser</AssemblyTitle>
     <AssemblyDescription>Privacy-first ephemeral browser with WebView2</AssemblyDescription>
     <AssemblyCompany>EphemeralBrowser</AssemblyCompany>
@@ -31,12 +31,16 @@
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="8.0.0" />
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="8.0.0" />
     <PackageReference Include="Microsoft.Extensions.Logging" Version="8.0.0" />
-    <PackageReference Include="System.Text.Json" Version="8.0.4" />
+    <PackageReference Include="System.Text.Json" Version="8.0.5" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\EphemeralBrowser.Core\EphemeralBrowser.Core.csproj" />
     <ProjectReference Include="..\EphemeralBrowser.UI\EphemeralBrowser.UI.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="Resources\**\*" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
 </Project>

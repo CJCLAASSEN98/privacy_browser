@@ -1,3 +1,8 @@
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Threading.Tasks;
 using Xunit;
 using FluentAssertions;
 using EphemeralBrowser.Core.Services;
@@ -167,15 +172,14 @@ public class ProfileManagerTests : IAsyncDisposable
     }
 
     [Fact]
-    public void ProfileId_Generation_ProducesUniqueIds()
+    public async Task ProfileId_Generation_ProducesUniqueIds()
     {
         var profileIds = new List<string>();
         
         // Create multiple profiles to test ID uniqueness
         for (int i = 0; i < 10; i++)
         {
-            var task = _profileManager.CreateEphemeralProfileAsync();
-            var profile = task.GetAwaiter().GetResult();
+            var profile = await _profileManager.CreateEphemeralProfileAsync();
             profileIds.Add(profile.ProfileId);
         }
         

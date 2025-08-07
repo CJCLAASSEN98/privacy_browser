@@ -1,7 +1,11 @@
+using System;
+using System.Collections.Generic;
+using System.IO;
 using BenchmarkDotNet.Attributes;
 using BenchmarkDotNet.Running;
 using EphemeralBrowser.Core.Services;
 using System.Text.Json;
+using System.Threading.Tasks;
 
 namespace EphemeralBrowser.Benchmarks;
 

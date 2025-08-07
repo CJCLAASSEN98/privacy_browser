@@ -1,7 +1,9 @@
+using System;
+using System.Collections.Generic;
+using System.Text.Json;
 using Xunit;
 using FluentAssertions;
 using EphemeralBrowser.Core.Services;
-using System.Text.Json;
 
 namespace EphemeralBrowser.Tests.Unit;
 

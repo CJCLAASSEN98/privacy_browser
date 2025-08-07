@@ -1,10 +1,10 @@
+using System;
 using System.Windows;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using EphemeralBrowser.Core.Services;
 using EphemeralBrowser.UI.ViewModels;
-using EphemeralBrowser.UI.Views;
 
 namespace EphemeralBrowser.App;
 

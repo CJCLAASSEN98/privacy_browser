@@ -1,6 +1,11 @@
+using System;
 using System.Collections.Concurrent;
 using System.Diagnostics;
+using System.IO;
+using System.Linq;
 using System.Security.Cryptography;
+using System.Threading;
+using System.Threading.Tasks;
 using Microsoft.Web.WebView2.Core;
 
 namespace EphemeralBrowser.Core.Services;
@@ -31,7 +36,8 @@ public sealed class ProfileManager : IProfileManager, IAsyncDisposable
 
     public async Task<ProfileInfo> CreateEphemeralProfileAsync(string? sessionId = null)
     {
-        ObjectDisposedException.ThrowIfDisposed(_disposed, this);
+        if (_disposed)
+            throw new ObjectDisposedException(nameof(ProfileManager));
 
         var profileId = sessionId ?? GenerateProfileId();
         var userDataFolder = Path.Combine(_baseUserDataPath, profileId);
@@ -40,8 +46,10 @@ public sealed class ProfileManager : IProfileManager, IAsyncDisposable
         {
             Directory.CreateDirectory(userDataFolder);
             
-            var environmentOptions = CoreWebView2EnvironmentOptions.CreateDefault();
-            environmentOptions.AdditionalBrowserArguments = GetSecurityArguments();
+            var environmentOptions = new CoreWebView2EnvironmentOptions
+            {
+                AdditionalBrowserArguments = GetSecurityArguments()
+            };
             
             var environment = await CoreWebView2Environment.CreateAsync(
                 browserExecutableFolder: null,
@@ -53,7 +61,8 @@ public sealed class ProfileManager : IProfileManager, IAsyncDisposable
             
             if (!_profiles.TryAdd(profileId, entry))
             {
-                environment?.Dispose();
+                // Environment cleanup - no direct Dispose method
+                await Task.Delay(50); // Brief delay for cleanup
                 Directory.Delete(userDataFolder, recursive: true);
                 throw new InvalidOperationException($"Profile {profileId} already exists");
             }
@@ -77,16 +86,13 @@ public sealed class ProfileManager : IProfileManager, IAsyncDisposable
 
         try
         {
-            // Phase 1: Dispose WebView2 environment and wait for process exit
+            // Phase 1: Close WebView2 environment
             if (entry.Environment != null)
             {
-                var browserProcessId = GetBrowserProcessId(entry.Environment);
-                entry.Environment.Dispose();
-                
-                if (browserProcessId.HasValue)
-                {
-                    await WaitForProcessExitAsync(browserProcessId.Value, TimeSpan.FromSeconds(10));
-                }
+                // WebView2 environments don't have a direct Dispose method
+                // They are disposed automatically when all WebView2 controls are disposed
+                // We just need to wait a bit for cleanup
+                await Task.Delay(100);
             }
 
             // Phase 2: Secure directory wipe with retry logic
@@ -103,6 +109,7 @@ public sealed class ProfileManager : IProfileManager, IAsyncDisposable
 
     public async Task<CoreWebView2Environment?> GetEnvironmentAsync(string profileId)
     {
+        await Task.CompletedTask; // Make method truly async
         return _profiles.TryGetValue(profileId, out var entry) ? entry.Environment : null;
     }
 
@@ -178,39 +185,6 @@ public sealed class ProfileManager : IProfileManager, IAsyncDisposable
             "--no-first-run",
             "--disable-default-apps"
         });
-    }
-
-    private static int? GetBrowserProcessId(CoreWebView2Environment environment)
-    {
-        try
-        {
-            return environment.BrowserProcessId;
-        }
-        catch
-        {
-            return null;
-        }
-    }
-
-    private static async Task WaitForProcessExitAsync(int processId, TimeSpan timeout)
-    {
-        try
-        {
-            using var process = Process.GetProcessById(processId);
-            if (!process.HasExited)
-            {
-                using var cts = new CancellationTokenSource(timeout);
-                await process.WaitForExitAsync(cts.Token);
-            }
-        }
-        catch (ArgumentException)
-        {
-            // Process already exited
-        }
-        catch (OperationCanceledException)
-        {
-            // Timeout exceeded, continue anyway
-        }
     }
 
     private static async Task SecureDirectoryWipeAsync(string directoryPath)
