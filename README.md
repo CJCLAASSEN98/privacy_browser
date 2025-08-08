@@ -28,7 +28,7 @@ Licensing Contact: claassen.cjs@gmail.com
 Violation of this license will result in immediate legal action. Unauthorized commercial use subjects violators to liability for:
 - Lost licensing revenue and profits
 - Legal fees and court costs  
-- Statutory damages up to $150,000 per work
+- Statutory damages up to $1 500,000 per work
 - Injunctive relief to stop unauthorized use
 
 🛡️ Warranty Disclaimer
