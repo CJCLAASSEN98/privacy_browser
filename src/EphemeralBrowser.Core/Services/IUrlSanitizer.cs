@@ -1,3 +1,11 @@
+/*
+ * EphemeralBrowser - Privacy-First Ephemeral Browser
+ * Copyright © 2025 EphemeralBrowser. All Rights Reserved.
+ * 
+ * Commercial use prohibited without license. Contact: claassen.cjs@gmail.com
+ * For licensing terms and commercial use, see LICENSE file.
+ */
+
 using System;
 using System.Collections.Concurrent;
 
