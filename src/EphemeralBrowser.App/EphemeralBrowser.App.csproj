@@ -18,9 +18,10 @@
     <FileVersion>1.0.0.0</FileVersion>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+  <PropertyGroup Condition="'$(Configuration)'=='Release'">
     <PublishSingleFile>true</PublishSingleFile>
-    <PublishTrimmed>true</PublishTrimmed>
+    <PublishTrimmed>false</PublishTrimmed>
+    <PublishReadyToRun>true</PublishReadyToRun>
     <SelfContained>false</SelfContained>
     <RuntimeIdentifier>win-x64</RuntimeIdentifier>
   </PropertyGroup>
@@ -42,5 +43,78 @@
   <ItemGroup>
     <Content Include="Resources\**\*" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
+
+  <!-- Create desktop shortcut during publish -->
+  <Target Name="CreateDesktopShortcut" AfterTargets="Publish" Condition="'$(Configuration)' == 'Release' And '$(PublishSingleFile)' == 'true'">
+    <PropertyGroup>
+      <TempScriptPath>$(TempPath)create_shortcut.ps1</TempScriptPath>
+      <AbsoluteTargetPath>$([System.IO.Path]::GetFullPath('$(PublishDir)EphemeralBrowser.App.exe'))</AbsoluteTargetPath>
+      <AbsoluteWorkingDir>$([System.IO.Path]::GetFullPath('$(PublishDir)'))</AbsoluteWorkingDir>
+    </PropertyGroup>
+    
+    <Message Text="Creating desktop shortcut..." Importance="high" />
+    <Message Text="Target executable: $(AbsoluteTargetPath)" Importance="high" />
+    
+    <!-- Write PowerShell script to temp file -->
+    <WriteLinesToFile File="$(TempScriptPath)" Lines="
+# Get the actual Desktop path (handles OneDrive, redirected folders, etc.)
+$DesktopPath = [Environment]::GetFolderPath('Desktop')
+$ShortcutPath = Join-Path $DesktopPath 'EphemeralBrowser.lnk'
+$TargetExe = '$(AbsoluteTargetPath)'
+$WorkingDir = '$(AbsoluteWorkingDir)'
+
+Write-Host &quot;Desktop path: $DesktopPath&quot;
+Write-Host &quot;Target executable: $TargetExe&quot;
+Write-Host &quot;Working directory: $WorkingDir&quot;
+Write-Host &quot;Shortcut path: $ShortcutPath&quot;
+
+# Verify target executable exists
+if (-not (Test-Path $TargetExe)) {
+    Write-Host &quot;ERROR: Target executable not found at: $TargetExe&quot;
+    exit 1
+}
+
+# Ensure Desktop directory exists
+if (-not (Test-Path $DesktopPath)) {
+    Write-Host &quot;Desktop directory not found, creating...&quot;
+    New-Item -ItemType Directory -Path $DesktopPath -Force
+}
+
+try {
+    # Remove existing shortcut if it exists
+    if (Test-Path $ShortcutPath) {
+        Remove-Item $ShortcutPath -Force
+        Write-Host &quot;Removed existing shortcut&quot;
+    }
+    
+    $WshShell = New-Object -comObject WScript.Shell
+    $Shortcut = $WshShell.CreateShortcut($ShortcutPath)
+    $Shortcut.TargetPath = $TargetExe
+    $Shortcut.WorkingDirectory = $WorkingDir
+    $Shortcut.Description = 'Privacy-first ephemeral browser'
+    $Shortcut.IconLocation = $TargetExe + ',0'
+    $Shortcut.Save()
+    
+    # Verify shortcut was created
+    if (Test-Path $ShortcutPath) {
+        Write-Host &quot;✅ Desktop shortcut created successfully!&quot;
+        Write-Host &quot;Shortcut location: $ShortcutPath&quot;
+    } else {
+        Write-Host &quot;❌ Shortcut creation failed - file not found after Save()&quot;
+    }
+} catch {
+    $ErrorMessage = $Error[0].ToString()
+    Write-Host &quot;❌ Failed to create desktop shortcut: $ErrorMessage&quot;
+    Write-Host &quot;Manual shortcut target: $TargetExe&quot;
+}
+" Overwrite="true" />
+    
+    <!-- Execute the script -->
+    <Exec Command="powershell -ExecutionPolicy Bypass -File &quot;$(TempScriptPath)&quot;" 
+          ContinueOnError="true" />
+    
+    <!-- Clean up temp script -->
+    <Delete Files="$(TempScriptPath)" ContinueOnError="true" />
+  </Target>
 
 </Project>
